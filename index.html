@@ -3593,12 +3593,6 @@
             </button>
           </div>
           <div class="bottom-right-slot">
-            <button type="button" class="send-feedback-link-btn" id="btn-open-feedback" title="Send feedback or request">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-              </svg>
-              <span class="prev-mobile-hide">Send feedback</span>
-            </button>
           </div>
         </div>
         <div class="taste-status-row" id="taste-status-pill">
@@ -5664,54 +5658,8 @@
       if (scrim) scrim.classList.remove('open');
     }
 
-    let sessionVisitorId = '';
-    function getVisitorId() {
-      if (sessionVisitorId) return sessionVisitorId;
-      try {
-        const existing = window.sessionStorage && window.sessionStorage.getItem('mp_visitor_id');
-        if (existing) {
-          sessionVisitorId = existing;
-          return sessionVisitorId;
-        }
-      } catch (_) {}
-      sessionVisitorId = 'v_' + Math.random().toString(36).slice(2, 10);
-      try {
-        if (window.sessionStorage) window.sessionStorage.setItem('mp_visitor_id', sessionVisitorId);
-      } catch (_) {}
-      return sessionVisitorId;
-    }
-
-    function trackAnalyticsEvent(eventName, target = '', detail = '') {
-      if (!eventName) return;
-      try {
-        const payloadObj = {
-          event: String(eventName),
-          visitorId: getVisitorId(),
-          mode: audienceMode,
-          device: (window.innerWidth && window.innerWidth <= 768) ? 'Mobile' : 'Desktop',
-          target: String(target || '').slice(0, 140),
-          detail: String(detail || '').slice(0, 140),
-          services: enabledServices.length === ALL_SERVICE_IDS.length ? 'all' : enabledServices.join(','),
-          host: (window.location && window.location.hostname) ? window.location.hostname : 'local'
-        };
-        if (typeof window.gtag === 'function') {
-          window.gtag('event', eventName, payloadObj);
-        }
-        const payloadStr = JSON.stringify(payloadObj);
-        const analyticsRelay = atob('aHR0cDovL21heGtlc3NsZXIuYy5nb29nbGVycy5jb206ODc5Ny9hbmFseXRpY3M=');
-        const analyticsLocal = 'http://localhost:8797/analytics';
-        for (const ep of [analyticsRelay, analyticsLocal]) {
-          fetch(ep, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: payloadStr,
-            keepalive: true
-          }).catch(() => {});
-        }
-        const img = new Image(1, 1);
-        img.src = analyticsRelay + '?payload=' + encodeURIComponent(payloadStr) + '&_t=' + Date.now();
-      } catch (_) {}
-    }
+    // Usage tracking removed. Kept as a no-op so existing calls still work.
+    function trackAnalyticsEvent() {}
 
     function openFeedbackModal() {
       playSound('tap');
@@ -5730,67 +5678,10 @@
       if (scrim) scrim.classList.remove('open');
     }
 
+    // Feedback sending removed; the form no longer sends anywhere.
     function submitFeedbackForm(e) {
       e.preventDefault();
-      const msgEl = document.getElementById('feedback-message-input');
-      const senderEl = document.getElementById('feedback-sender-input');
-      const submitBtn = document.getElementById('btn-submit-feedback');
-      const message = (msgEl && msgEl.value ? msgEl.value : '').trim();
-      if (!message) return;
-
-      const payloadObj = {
-        category: 'Feedback / Request',
-        message: message,
-        sender: (senderEl && senderEl.value ? senderEl.value : '').trim(),
-        mode: audienceMode,
-        timestamp: new Date().toISOString()
-      };
-      const payloadStr = JSON.stringify(payloadObj);
-
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Sending...';
-      }
-
-      // Obfuscated relay endpoint so personal host details never appear in plain text
-      const relayBase = atob('aHR0cDovL21heGtlc3NsZXIuYy5nb29nbGVycy5jb206ODc5Ny9mZWVkYmFjaw==');
-      const localBase = 'http://localhost:8797/feedback';
-
-      for (const ep of [relayBase, localBase]) {
-        fetch(ep, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: payloadStr
-        }).catch(() => {});
-      }
-
-      if (window.location.protocol === 'https:') {
-        try {
-          const syncUrl = relayBase + '?payload=' + encodeURIComponent(payloadStr);
-          const popup = window.open(
-            syncUrl,
-            'movie_pickem_fb_win',
-            'width=1,height=1,left=9999,top=9999,menubar=no,toolbar=no,location=no,status=no'
-          );
-          if (popup) {
-            setTimeout(() => {
-              try { popup.close(); } catch (_) {}
-            }, 1200);
-          }
-        } catch (_) {}
-      }
-
-      setTimeout(() => {
-        if (submitBtn) submitBtn.textContent = 'Sent — thank you!';
-        setTimeout(() => {
-          closeFeedbackModal();
-          if (msgEl) msgEl.value = '';
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Send feedback';
-          }
-        }, 900);
-      }, 350);
+      closeFeedbackModal();
     }
 
     function initApp() {
